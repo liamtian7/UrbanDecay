@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urban decay or War — a ruins identification test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,800;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --soot:#13120e;
+    --panel:#1c1a15;
+    --panel-2:#23211b;
+    --line:#34302a;
+    --bone:#e9e3d5;
+    --bone-dim:#b6b0a1;
+    --mute:#857f71;
+    --amber:#cf913f;     /* peace / american decay */
+    --steel:#6f93a4;     /* war zone */
+    --right:#86a85a;
+    --wrong:#bf5341;
+    --focus:#e9e3d5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1b1914 0%, var(--soot) 60%) fixed;
+    color:var(--bone);
+    font-family:"Spectral",Georgia,serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;
+  }
+  .mono{font-family:"Space Mono",ui-monospace,monospace}
+  a{color:var(--bone-dim)}
+
+  .wrap{width:100%;max-width:760px;padding:22px 18px 60px;flex:1;display:flex;flex-direction:column}
+
+  /* header / scoreboard */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:14px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px;
+  }
+  .brand{line-height:1}
+  .brand .eyebrow{
+    font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--mute);display:block;margin-bottom:7px;
+  }
+  .brand h1{
+    font-size:24px;font-weight:800;margin:0;letter-spacing:.2px;
+  }
+  .brand h1 em{font-style:italic;font-weight:600;color:var(--amber)}
+  .brand h1 .v{color:var(--steel)}
+  .score{ text-align:right;font-family:"Space Mono",monospace;color:var(--bone-dim);min-width:118px}
+  .score .big{font-size:22px;color:var(--bone);letter-spacing:.5px}
+  .score .sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);margin-top:4px}
+
+  /* the exhibit card */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:3px;
+    overflow:hidden;
+    box-shadow:0 24px 60px -30px #000;
+    position:relative;
+  }
+  .tag{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:9px 13px;border-bottom:1px solid var(--line);
+    font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--mute);background:var(--panel-2);
+  }
+  .tag .seal{color:var(--bone-dim)}
+  .stage{
+    position:relative;background:#0c0b08;
+    aspect-ratio:3/2;width:100%;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .stage img{width:100%;height:100%;object-fit:cover;display:block;
+    filter:saturate(.92) contrast(1.02);}
+  .stage .spin{
+    position:absolute;font-family:"Space Mono",monospace;font-size:11px;color:var(--mute);
+    letter-spacing:.2em;text-transform:uppercase;
+  }
+  .grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:.5;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");}
+
+  /* choice buttons */
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .choice{
+    appearance:none;border:0;cursor:pointer;color:var(--bone);
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:18px 12px;font-family:"Spectral",serif;font-size:18px;font-weight:600;
+    letter-spacing:.2px;transition:background .15s,color .15s;position:relative;
+  }
+  .choice:first-child{border-right:1px solid var(--line)}
+  .choice .k{display:block;font-family:"Space Mono",monospace;font-size:9.5px;
+    letter-spacing:.26em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+  .choice[data-side="peace"]:hover{background:#241d12;color:var(--amber)}
+  .choice[data-side="war"]:hover{background:#172227;color:var(--steel)}
+  .choice:focus-visible{outline:2px solid var(--focus);outline-offset:-4px}
+  .choice:disabled{cursor:default}
+
+  /* verdict / reveal */
+  .verdict{border-top:1px solid var(--line);padding:0;max-height:0;overflow:hidden;
+    transition:max-height .35s ease;background:var(--panel-2)}
+  .verdict.open{max-height:420px}
+  .vinner{padding:16px 16px 18px}
+  .vhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .stamp{
+    font-family:"Space Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;padding:5px 10px;border:1px solid;border-radius:2px;
+  }
+  .stamp.right{color:var(--right);border-color:var(--right)}
+  .stamp.wrong{color:var(--wrong);border-color:var(--wrong)}
+  .vhead .truth{font-size:19px;font-weight:800}
+  .vhead .truth.peace{color:var(--amber)}
+  .vhead .truth.war{color:var(--steel)}
+  .meta{font-family:"Space Mono",monospace;font-size:11px;line-height:1.7;color:var(--bone-dim)}
+  .meta .row{display:flex;gap:8px}
+  .meta .lab{color:var(--mute);min-width:74px;text-transform:uppercase;letter-spacing:.1em;flex:none}
+  .meta .val{color:var(--bone-dim)}
+  .meta a{color:var(--bone-dim);text-decoration:underline;text-underline-offset:2px}
+  .next{
+    margin-top:14px;width:100%;appearance:none;cursor:pointer;
+    background:var(--bone);color:#161410;border:0;border-radius:2px;
+    font-family:"Space Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;padding:13px;transition:filter .15s}
+  .next:hover{filter:brightness(.92)}
+  .next:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  /* footer controls */
+  .controls{display:flex;justify-content:space-between;align-items:center;margin-top:14px;
+    font-family:"Space Mono",monospace;font-size:11px;color:var(--mute)}
+  .controls button{background:none;border:0;color:var(--mute);cursor:pointer;
+    font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:6px 2px;border-bottom:1px solid transparent}
+  .controls button:hover{color:var(--bone-dim);border-bottom-color:var(--line)}
+  .controls .pool{letter-spacing:.1em}
+
+  /* intro + error screens */
+  .panel-msg{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:26px 22px}
+  .panel-msg h2{font-size:21px;margin:0 0 12px;font-weight:800}
+  .panel-msg p{color:var(--bone-dim);font-size:15.5px;line-height:1.62;margin:0 0 12px}
+  .panel-msg .fine{font-family:"Space Mono",monospace;font-size:11px;color:var(--mute);
+    line-height:1.75;letter-spacing:.02em;border-top:1px solid var(--line);padding-top:14px;margin-top:18px}
+  .start{margin-top:6px;appearance:none;cursor:pointer;background:var(--bone);color:#161410;border:0;
+    border-radius:2px;font-family:"Space Mono",monospace;font-weight:700;font-size:12px;
+    letter-spacing:.22em;text-transform:uppercase;padding:14px 26px}
+  .start:hover{filter:brightness(.92)}
+  .hidden{display:none !important}
+  .legend{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.14em;color:var(--mute);
+    text-align:center;margin-top:18px;text-transform:uppercase}
+  .legend b{color:var(--amber);font-weight:400}
+  .legend i{color:var(--steel);font-style:normal}
+
+  @media (max-width:480px){
+    .brand h1{font-size:20px}.choice{font-size:16px}
+    .vhead .truth{font-size:17px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .verdict{transition:none}.next,.choice{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="eyebrow">Ruins identification test</span>
+      <h1><em>Urban decay</em> or <span class="v">War</span>?</h1>
+    </div>
+    <div class="score" id="score">
+      <div class="big" id="scoreNum">0 / 0</div>
+      <div class="sub" id="streak">streak 0</div>
+    </div>
+  </header>
+
+  <!-- INTRO -->
+  <section id="intro" class="panel-msg">
+    <h2>One building. One question.</h2>
+    <p>Every round you'll see a single ruined or derelict building — no people, no captions to give it away. Decide whether you're looking at <b style="color:var(--amber)">an abandoned American city</b> (Detroit, St. Louis, Cleveland, Gary…) or <b style="color:var(--steel)">a war zone</b> (Grozny, Mosul, Aleppo, Donbas…). Then the location is unsealed.</p>
+    <p>The point of the test is how often you can't tell.</p>
+    <button class="start" id="startBtn">Begin</button>
+    <div class="fine">
+      Photographs are pulled live from Wikimedia Commons and are real places. The war-damage images document real conflicts and real loss. Images are filtered to exclude people, weapons, and text where possible — if something unsuitable appears, use <strong>Skip</strong> and it won't be counted.
+    </div>
+  </section>
+
+  <!-- ERROR -->
+  <section id="error" class="panel-msg hidden">
+    <h2>Couldn't reach the archive</h2>
+    <p id="errMsg">The image archive didn't respond. This usually means the network request was blocked.</p>
+    <button class="start" id="retryBtn">Try again</button>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="hidden">
+    <div class="card">
+      <div class="tag">
+        <span class="seal mono" id="exhibitNo">Exhibit —</span>
+        <span class="mono">Location: <span id="sealState">sealed</span></span>
+      </div>
+      <div class="stage" id="stage">
+        <span class="spin mono" id="spin">developing…</span>
+        <span class="grain"></span>
+      </div>
+      <div class="choices" id="choices">
+        <button class="choice" data-side="peace"><span class="k">Press A</span>American city</button>
+        <button class="choice" data-side="war"><span class="k">Press L</span>War zone</button>
+      </div>
+      <div class="verdict" id="verdict">
+        <div class="vinner">
+          <div class="vhead">
+            <span class="stamp" id="stamp"></span>
+            <span class="truth" id="truth"></span>
+          </div>
+          <div class="meta">
+            <div class="row"><span class="lab">Subject</span><span class="val" id="mTitle"></span></div>
+            <div class="row"><span class="lab">Credit</span><span class="val" id="mCredit"></span></div>
+            <div class="row"><span class="lab">Source</span><span class="val"><a id="mLink" target="_blank" rel="noopener">Wikimedia Commons</a> · <span id="mLicense"></span></span></div>
+          </div>
+          <button class="next" id="nextBtn">Next exhibit →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <span class="pool" id="poolInfo">loading archive…</span>
+      <button id="skipBtn">Skip this one</button>
+    </div>
+    <div class="legend"><b>amber = American decay</b> &nbsp;·&nbsp; <i>steel = war zone</i></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // Curated source categories on Wikimedia Commons. Wrong names simply return
+  // nothing, so the list errs on the generous side. side: peace = US decay, war = conflict.
+  const CATEGORIES = [
+    {t:"Abandoned buildings in Detroit",                    side:"peace", place:"Detroit, Michigan"},
+    {t:"Packard Automotive Plant",                          side:"peace", place:"Detroit, Michigan"},
+    {t:"Abandoned buildings in Gary, Indiana",              side:"peace", place:"Gary, Indiana"},
+    {t:"City Methodist Church (Gary, Indiana)",             side:"peace", place:"Gary, Indiana"},
+    {t:"Abandoned buildings in St. Louis, Missouri",        side:"peace", place:"St. Louis, Missouri"},
+    {t:"Abandoned buildings in Cleveland, Ohio",            side:"peace", place:"Cleveland, Ohio"},
+    {t:"Abandoned buildings in Ohio",                       side:"peace", place:"Ohio, USA"},
+    {t:"Abandoned buildings in Pennsylvania",               side:"peace", place:"Pennsylvania, USA"},
+    {t:"Abandoned buildings in Buffalo, New York",          side:"peace", place:"Buffalo, New York"},
+    {t:"Abandoned buildings in Camden, New Jersey",         side:"peace", place:"Camden, New Jersey"},
+    {t:"Abandoned buildings in Baltimore",                  side:"peace", place:"Baltimore, Maryland"},
+    {t:"Abandoned buildings in Chicago",                    side:"peace", place:"Chicago, Illinois"},
+    {t:"Urban decay in the United States",                  side:"peace", place:"United States"},
+    {t:"Abandoned buildings in the United States",          side:"peace", place:"United States"},
+
+    {t:"Buildings damaged in the Battle of Grozny (1994-1995)", side:"war", place:"Grozny, Chechnya"},
+    {t:"Destroyed buildings in Grozny",                     side:"war", place:"Grozny, Chechnya"},
+    {t:"Destroyed buildings in Mosul",                      side:"war", place:"Mosul, Iraq"},
+    {t:"War damage in Mosul",                               side:"war", place:"Mosul, Iraq"},
+    {t:"Destroyed buildings in Aleppo",                     side:"war", place:"Aleppo, Syria"},
+    {t:"Destroyed buildings in Homs",                       side:"war", place:"Homs, Syria"},
+    {t:"War damage in Syria",                               side:"war", place:"Syria"},
+    {t:"Destroyed buildings in Donetsk",                    side:"war", place:"Donetsk, Donbas"},
+    {t:"Destroyed buildings in Mariupol",                   side:"war", place:"Mariupol, Ukraine"},
+    {t:"Destroyed buildings in Ukraine",                    side:"war", place:"Ukraine"},
+    {t:"War damage in Ukraine",                             side:"war", place:"Ukraine"},
+    {t:"Buildings damaged in the Siege of Sarajevo",        side:"war", place:"Sarajevo, Bosnia"},
+    {t:"Destroyed buildings in Sarajevo",                   side:"war", place:"Sarajevo, Bosnia"},
+    {t:"Battle of Vukovar",                                 side:"war", place:"Vukovar, Croatia"},
+    {t:"Destroyed buildings in Vukovar",                    side:"war", place:"Vukovar, Croatia"},
+    {t:"Destroyed buildings in Beirut",                     side:"war", place:"Beirut, Lebanon"},
+    {t:"War damage in Lebanon",                             side:"war", place:"Lebanon"},
+    {t:"Destroyed buildings in the Gaza Strip",             side:"war", place:"Gaza"},
+    {t:"Destroyed buildings in Gaza",                       side:"war", place:"Gaza"},
+    {t:"Destroyed buildings in Stepanakert",                side:"war", place:"Nagorno-Karabakh"},
+    {t:"Destroyed buildings in Fallujah",                   side:"war", place:"Fallujah, Iraq"},
+    {t:"War damage in Iraq",                                side:"war", place:"Iraq"},
+    {t:"Destroyed buildings in Kabul",                      side:"war", place:"Kabul, Afghanistan"},
+    {t:"War damage in Afghanistan",                         side:"war", place:"Afghanistan"},
+    {t:"Buildings destroyed by war",                        side:"war", place:"war zone"}
+  ];
+
+  // Reject any file whose name OR description hints at people, weapons, text,
+  // maps, interiors, etc. Word-boundaried to avoid eating "Plant", "Roman", etc.
+  const BLOCK = /\b(soldier|soldiers|troops?|militia|fighter|fighters|gunman|gunmen|guns?|rifle|rifles|weapon|weapons|bayonet|tank|tanks|artillery|missile|rocket|shell|apc|convoy|patrol|parade|protest|protesters|protestors|riot|demonstration|funeral|grave|graves|cemetery|burial|corpse|body|bodies|victim|victims|injured|wounded|casualt\w*|refugees?|crowd|people|persons?|man|men|woman|women|girl|girls|boy|boys|child|children|kid|kids|worker|workers|tourists?|visitors?|portrait|selfie|memorial|monument|statue|plaque|map|maps|diagram|schematic|chart|poster|banner|leaflet|flag|flags|emblem|logo|signpost|billboard|graffiti|mural|interior|indoors?|inside|museum|exhibition|aerial|satellite|drone|skyline|officers?|marines?|battalion|brigade|regiment|platoon|squad|members?)\b/;
+
+  const ALLOW_EXT = /\.(jpe?g)$/i;
+  const API = "https://commons.wikimedia.org/w/api.php";
+
+  // DOM
+  const $ = id => document.getElementById(id);
+  const intro=$("intro"), errBox=$("error"), game=$("game"), errMsg=$("errMsg");
+  const stage=$("stage"), spin=$("spin");
+  const choicesEl=$("choices"), choiceBtns=[...choicesEl.querySelectorAll(".choice")];
+  const verdict=$("verdict"), stamp=$("stamp"), truth=$("truth");
+  const mTitle=$("mTitle"), mCredit=$("mCredit"), mLink=$("mLink"), mLicense=$("mLicense");
+  const sealState=$("sealState"), exhibitNo=$("exhibitNo");
+  const scoreNum=$("scoreNum"), streakEl=$("streak"), poolInfo=$("poolInfo");
+  const nextBtn=$("nextBtn"), skipBtn=$("skipBtn");
+
+  // State
+  const pools={peace:[], war:[]};
+  const seen=new Set();
+  let current=null, upcoming=null, imgEl=null;
+  let answered=0, correct=0, streak=0, exhibit=0, locked=false;
+
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+  const stripHtml = s => (s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+
+  function toCandidate(page, cat){
+    const ii = page.imageinfo && page.imageinfo[0];
+    if(!ii) return null;
+    const name = (page.title||"").replace(/^File:/,"");
+    if(!ALLOW_EXT.test(name)) return null;
+    const lower = name.toLowerCase();
+    if(BLOCK.test(lower)) return null;
+    if(ii.width && ii.width < 500) return null;
+    const md = ii.extmetadata || {};
+    const desc = stripHtml((md.ImageDescription&&md.ImageDescription.value)||"").toLowerCase();
+    if(desc && BLOCK.test(desc)) return null;
+    const thumb = ii.thumburl || ii.url;
+    if(!thumb) return null;
+    let subj = stripHtml((md.ObjectName&&md.ObjectName.value)||"");
+    if(!subj || /^file:/i.test(subj)) subj = name.replace(/\.[^.]+$/,"").replace(/_/g," ");
+    return {
+      id: page.pageid,
+      side: cat.side,
+      place: cat.place,
+      subject: subj,
+      thumb,
+      page: ii.descriptionshorturl || ii.descriptionurl || "",
+      credit: stripHtml((md.Artist&&md.Artist.value)||"") || "Unknown",
+      license: stripHtml((md.LicenseShortName&&md.LicenseShortName.value)||"") || "see source"
+    };
+  }
+
+  async function fetchCategory(cat){
+    const url = API
+      + "?action=query&format=json&origin=*"
+      + "&generator=categorymembers"
+      + "&gcmtitle=Category:" + encodeURIComponent(cat.t)
+      + "&gcmtype=file&gcmlimit=500"
+      + "&prop=imageinfo&iiprop=url%7Csize%7Cextmetadata&iiurlwidth=1280";
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+    const out=[];
+    for(const p of pages){
+      const c = toCandidate(p, cat);
+      if(c && !seen.has(c.id)){ seen.add(c.id); out.push(c); }
+    }
+    return out;
+  }
+
+  async function loadArchive(){
+    // Fire all categories; tolerate individual failures.
+    const results = await Promise.allSettled(CATEGORIES.map(fetchCategory));
+    let ok=0;
+    results.forEach((r,i)=>{
+      if(r.status==="fulfilled"){ ok++; for(const c of r.value) pools[c.side].push(c); }
+    });
+    shuffle(pools.peace); shuffle(pools.war);
+    if(ok===0) throw new Error("network");
+    if(pools.peace.length===0 && pools.war.length===0)
+      throw new Error("empty");
+  }
+
+  function pickCandidate(){
+    let side = Math.random()<0.5 ? "peace":"war";
+    if(pools[side].length===0) side = side==="peace"?"war":"peace";
+    if(pools[side].length===0) return null;
+    return pools[side].pop();
+  }
+
+  function preload(cand){
+    if(!cand) return;
+    const im = new Image();
+    im.src = cand.thumb;
+    cand._img = im;
+  }
+
+  function updatePool(){
+    const n = pools.peace.length + pools.war.length + (current?1:0) + (upcoming?1:0);
+    poolInfo.textContent = n + " exhibits remaining";
+  }
+
+  function showError(msg){
+    game.classList.add("hidden"); intro.classList.add("hidden");
+    errMsg.textContent = msg; errBox.classList.remove("hidden");
+  }
+
+  function mountImage(cand, onFail){
+    stage.querySelectorAll("img").forEach(n=>n.remove());
+    spin.style.display="block";
+    const img = cand._img && cand._img.complete ? cand._img : new Image();
+    if(!(cand._img && cand._img.complete)) img.src = cand.thumb;
+    img.alt = "A ruined building; guess the location.";
+    const done = ()=>{ spin.style.display="none"; };
+    if(img.complete && img.naturalWidth>0){ stage.insertBefore(img, stage.firstChild); done(); }
+    else {
+      img.onload = ()=>{ stage.insertBefore(img, stage.firstChild); done(); };
+      img.onerror = ()=>{ onFail(); };
+    }
+    imgEl = img;
+  }
+
+  function renderCurrent(){
+    if(!current){ // try to refill from whatever is left
+      current = upcoming; upcoming = pickCandidate(); preload(upcoming);
+    }
+    if(!current){ showError("The archive ran out of suitable images. Reload to pull a fresh batch."); return; }
+    locked=false;
+    exhibit++;
+    exhibitNo.textContent = "Exhibit " + String(exhibit).padStart(3,"0");
+    sealState.textContent = "sealed";
+    verdict.classList.remove("open");
+    choiceBtns.forEach(b=>{ b.disabled=false; b.style.opacity="1"; });
+    mountImage(current, advanceAfterBadImage);
+    updatePool();
+  }
+
+  function advanceAfterBadImage(){
+    // current image failed to load — discard silently and move on
+    current = upcoming;
+    upcoming = pickCandidate();
+    preload(upcoming);
+    if(current) renderCurrent();
+    else showError("The archive ran out of loadable images. Reload to try again.");
+  }
+
+  function reveal(side){
+    if(locked || !current) return;
+    locked=true;
+    const isRight = side===current.side;
+    answered++;
+    if(isRight){ correct++; streak++; } else { streak=0; }
+    scoreNum.textContent = correct + " / " + answered;
+    streakEl.textContent = "streak " + streak;
+
+    stamp.className = "stamp " + (isRight?"right":"wrong");
+    stamp.textContent = isRight ? "Correct" : "Wrong";
+    truth.className = "truth " + current.side;
+    truth.textContent = current.side==="peace" ? current.place + " — American city"
+                                               : current.place + " — war zone";
+    mTitle.textContent = current.subject;
+    mCredit.textContent = current.credit;
+    mLicense.textContent = current.license;
+    if(current.page){ mLink.href = current.page; mLink.style.pointerEvents="auto"; }
+    else { mLink.removeAttribute("href"); mLink.style.pointerEvents="none"; }
+    sealState.textContent = "unsealed";
+
+    choiceBtns.forEach(b=>{
+      b.disabled=true;
+      b.style.opacity = (b.dataset.side===current.side) ? "1" : "0.4";
+    });
+    verdict.classList.add("open");
+    nextBtn.focus();
+  }
+
+  function next(){
+    current = upcoming;
+    upcoming = pickCandidate();
+    preload(upcoming);
+    renderCurrent();
+  }
+
+  function skip(){
+    // does not affect score
+    if(!current) return;
+    current = upcoming;
+    upcoming = pickCandidate();
+    preload(upcoming);
+    renderCurrent();
+  }
+
+  // events
+  choiceBtns.forEach(b=> b.addEventListener("click", ()=>reveal(b.dataset.side)));
+  nextBtn.addEventListener("click", next);
+  skipBtn.addEventListener("click", skip);
+  document.addEventListener("keydown", e=>{
+    if(game.classList.contains("hidden")) return;
+    const k=e.key.toLowerCase();
+    if(!locked && k==="a"){ reveal("peace"); }
+    else if(!locked && k==="l"){ reveal("war"); }
+    else if(locked && (k==="enter"||k===" ")){ e.preventDefault(); next(); }
+    else if(k==="s"){ skip(); }
+  });
+
+  async function begin(){
+    intro.classList.add("hidden"); errBox.classList.add("hidden");
+    game.classList.remove("hidden");
+    poolInfo.textContent = "loading archive…";
+    spin.textContent="developing…"; spin.style.display="block";
+    try{
+      await loadArchive();
+      current = pickCandidate();
+      upcoming = pickCandidate();
+      preload(upcoming);
+      renderCurrent();
+    }catch(err){
+      const msg = err && err.message==="empty"
+        ? "Reached the archive, but no images passed the people/weapons/text filter. Reload to try again."
+        : "The image archive didn't respond — the network request may have been blocked. Reload to retry.";
+      showError(msg);
+    }
+  }
+
+  $("startBtn").addEventListener("click", begin);
+  $("retryBtn").addEventListener("click", begin);
+})();
+</script>
+</body>
+</html>
